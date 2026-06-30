@@ -50,7 +50,7 @@ edge cases), there is an optional paid service:
 - **Fee:** 7–15% of recovered amount, scaled by size (whales pay lower %)
 - **Payment:** AFTER you receive your STONE — never upfront
 - **Process:** Split 60/40 — recover 60% first, pay fee, then recover the remaining 40%
-- **Contact:** Telegram **@xuanthang92x**
+- **Contact:** Telegram **@stone_help**
 
 The fee structure exists because guiding each user 1-on-1 takes time. The
 DIY tool is and always will be free.
