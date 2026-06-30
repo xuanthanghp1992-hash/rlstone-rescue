@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hex Decoder - rlSTONE Rescue</title>
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 720px; margin: 24px auto; padding: 0 16px; background: #0a0a0a; color: #e5e5e5; }
+  h1 { font-size: 22px; color: #fff; }
+  textarea { width: 100%; min-height: 140px; padding: 12px; font-family: monospace; font-size: 13px; border: 1px solid #333; border-radius: 6px; background: #161616; color: #e5e5e5; }
+  button { background: #1f6feb; color: white; border: 0; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; margin: 8px 4px 0 0; }
+  button:hover { background: #2580f7; }
+  .result { background: #161616; border: 1px solid #2a2a2a; padding: 16px; border-radius: 6px; margin-top: 16px; font-size: 14px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+  .url { color: #58a6ff; text-decoration: underline; }
+  .note { background: #1a1a2e; border-left: 3px solid #1f6feb; padding: 12px 14px; margin: 16px 0; font-size: 13px; color: #a8b7ce; border-radius: 0 6px 6px 0; }
+  .footer { margin-top: 32px; font-size: 12px; color: #666; }
+</style>
+</head>
+<body>
+<h1>🔍 Hex → Text Decoder</h1>
+<div class="note">
+  Paste the <strong>Raw input</strong> hex from any Manta Explorer transaction to read the embedded message.<br>
+  Useful if you received an on-chain memo about rlSTONE recovery.
+</div>
+
+<textarea id="hex" placeholder="Paste hex here (with or without 0x prefix)..."></textarea>
+<button onclick="decode()">Decode</button>
+<button onclick="clearAll()">Clear</button>
+
+<div id="output"></div>
+
+<div class="footer">
+  Source: <a href="https://github.com/xuanthanghp1992-hash/rlstone-rescue" class="url">github.com/xuanthanghp1992-hash/rlstone-rescue</a> ·
+  Free DIY tool: <a href="./" class="url">rlSTONE Rescue</a> ·
+  Telegram: <strong>@stone_help</strong>
+</div>
+
+<script>
+function decode() {
+  let hex = document.getElementById('hex').value.trim();
+  if (hex.startsWith('0x') || hex.startsWith('0X')) hex = hex.slice(2);
+  hex = hex.replace(/\s+/g, '');
+  if (!hex.match(/^[0-9a-fA-F]+$/)) {
+    document.getElementById('output').innerHTML = '<div class="result" style="color:#f87171">⚠️ Invalid hex characters. Only 0-9, a-f allowed.</div>';
+    return;
+  }
+  if (hex.length % 2 !== 0) {
+    document.getElementById('output').innerHTML = '<div class="result" style="color:#f87171">⚠️ Hex length must be even.</div>';
+    return;
+  }
+  try {
+    const bytes = new Uint8Array(hex.length / 2);
+    for (let i = 0; i < hex.length; i += 2) bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
+    const decoder = new TextDecoder('utf-8', { fatal: false });
+    let text = decoder.decode(bytes);
+    // Make URLs clickable
+    text = text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener" class="url">$1</a>');
+    document.getElementById('output').innerHTML = '<div class="result">' + text + '</div>';
+  } catch (e) {
+    document.getElementById('output').innerHTML = '<div class="result" style="color:#f87171">⚠️ Decode failed: ' + e.message + '</div>';
+  }
+}
+function clearAll() {
+  document.getElementById('hex').value = '';
+  document.getElementById('output').innerHTML = '';
+}
+
+// Auto-decode if hex passed in URL ?hex=...
+const params = new URLSearchParams(window.location.search);
+const initialHex = params.get('hex');
+if (initialHex) {
+  document.getElementById('hex').value = initialHex;
+  decode();
+}
+</script>
+</body>
+</html>
