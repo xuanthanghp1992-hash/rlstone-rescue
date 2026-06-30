@@ -83,7 +83,7 @@ position (~$152 of stranded STONE). If this helped you and you'd like to
 support continued work on recovery tools for other dead-frontend protocols,
 tips are appreciated but **not required**:
 
-- Tip wallet: `0x3033a685a400763de76256147bc2a020589755c8` (Manta Pacific)
+- Tip wallet: `0xd0421d20e832310E64C23E3e88e9F7E3F8505561` (Manta Pacific)
 
 ## License
 

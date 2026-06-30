@@ -55,7 +55,7 @@ Quy trình:
 Tổng anh nhận về: $X,XXX
 Anh KHÔNG cần trả gì trước.
 
-Ví em nhận phí: 0x3033a685a400763de76256147bc2a020589755c8
+Ví em nhận phí: 0xd0421d20e832310E64C23E3e88e9F7E3F8505561
 
 Anh OK thì em bắt đầu hướng dẫn.
 ```
@@ -94,7 +94,7 @@ Anh đã nhận X.XXXX STONE (~$X,XXX) vào ví.
 
 Bây giờ anh chuyển phí dịch vụ:
 - Số tiền: X.XXXX STONE (~$XXX)
-- Ví em: 0x3033a685a400763de76256147bc2a020589755c8
+- Ví em: 0xd0421d20e832310E64C23E3e88e9F7E3F8505561
 - Mạng: Manta Pacific
 - Token: STONE (0xEc901DA9c68E90798BbBb74c11406A32A70652C3)
 
