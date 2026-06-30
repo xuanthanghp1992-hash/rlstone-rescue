@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>rlSTONE Rescue — Free Tool to Recover Stranded STONE on Manta</title>
+<meta name="description" content="Open-source tool to withdraw your rlSTONE (RNP LayerBank STONE) from Renew Paradigm on Manta Pacific. Frontend is dead but the smart contract still works.">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: #0d1117; color: #c9d1d9;
+  min-height: 100vh; padding: 24px;
+  display: flex; justify-content: center;
+}
+.container { max-width: 760px; width: 100%; }
+header { margin-bottom: 24px; }
+h1 { font-size: 26px; margin-bottom: 8px; color: #58a6ff; }
+.subtitle { color: #8b949e; margin-bottom: 8px; font-size: 14px; line-height: 1.5; }
+.tagline { color: #d29922; font-size: 13px; margin-top: 4px; }
+.card {
+  background: #161b22; border: 1px solid #30363d;
+  border-radius: 12px; padding: 20px; margin-bottom: 16px;
+}
+.card h2 { font-size: 17px; margin-bottom: 12px; color: #f0f6fc; display: flex; align-items: center; }
+.step-num {
+  display: inline-block; width: 26px; height: 26px;
+  background: #1f6feb; color: white; border-radius: 50%;
+  text-align: center; line-height: 26px; margin-right: 10px;
+  font-weight: bold; font-size: 13px; flex-shrink: 0;
+}
+.step-done .step-num { background: #2ea043; }
+.step-done h2 { color: #2ea043; }
+.row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #21262d; font-size: 14px; }
+.row:last-child { border-bottom: none; }
+.label { color: #8b949e; }
+.value { color: #c9d1d9; font-family: monospace; word-break: break-all; text-align: right; }
+button {
+  width: 100%; padding: 14px; margin-top: 12px;
+  background: #238636; color: white; border: none; border-radius: 8px;
+  font-size: 15px; font-weight: 600; cursor: pointer;
+  transition: background .2s;
+}
+button:hover:not(:disabled) { background: #2ea043; }
+button:disabled { background: #30363d; color: #8b949e; cursor: not-allowed; }
+.btn-secondary { background: #1f6feb; }
+.btn-secondary:hover:not(:disabled) { background: #388bfd; }
+.log {
+  margin-top: 12px; padding: 12px;
+  background: #0d1117; border: 1px solid #30363d; border-radius: 8px;
+  font-family: monospace; font-size: 12px;
+  max-height: 260px; overflow-y: auto;
+  white-space: pre-wrap; word-break: break-all;
+}
+.log-info { color: #58a6ff; }
+.log-ok { color: #3fb950; }
+.log-err { color: #f85149; }
+.log-warn { color: #d29922; }
+.balance-box {
+  background: #1c2128; padding: 12px; border-radius: 8px;
+  margin-bottom: 12px;
+}
+.network-warn {
+  background: #4d2d00; color: #fab500;
+  padding: 12px; border-radius: 8px;
+  margin-bottom: 16px;
+  display: none;
+}
+.network-warn.show { display: block; }
+.muted { color: #6e7681; font-size: 12px; margin-top: 8px; line-height: 1.5; }
+.banner {
+  background: #1c2128; border-left: 3px solid #d29922;
+  padding: 12px 16px; border-radius: 4px; margin-bottom: 16px;
+  font-size: 13px; line-height: 1.5;
+}
+.banner strong { color: #d29922; }
+a { color: #58a6ff; text-decoration: none; }
+a:hover { text-decoration: underline; }
+.tip-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; background: #1c2128; border-radius: 6px;
+  margin-top: 12px; font-size: 12px;
+}
+.tip-row code {
+  background: #0d1117; padding: 2px 6px; border-radius: 4px;
+  font-family: monospace; color: #c9d1d9;
+}
+footer {
+  margin-top: 32px; padding-top: 16px;
+  border-top: 1px solid #21262d;
+  color: #6e7681; font-size: 12px; text-align: center; line-height: 1.6;
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1>🔓 rlSTONE Rescue Tool</h1>
+  <p class="subtitle">
+    Recover your stranded <strong>rlSTONE</strong> (RNP LayerBank STONE) from the
+    deprecated Renew Paradigm campaign on Manta Pacific.
+  </p>
+  <p class="tagline">⚠️ Frontend is dead, but the smart contracts still work. This tool calls them directly.</p>
+</header>
+
+<div class="banner">
+  <strong>Trust note:</strong> This tool is open source. It never asks for your seed phrase or private key.
+  Every transaction is signed in <em>your</em> wallet — review every detail before approving.
+  Read the source on
+  <a href="https://github.com/" target="_blank">GitHub</a> if you want to audit.
+</div>
+
+<div id="netWarn" class="network-warn">
+  ⚠️ Wrong network. Click to switch to Manta Pacific (chain ID 169).
+  <button onclick="switchToManta()" style="margin-top: 8px;">Switch to Manta Pacific</button>
+</div>
+
+<div class="card">
+  <h2>📊 Wallet Status</h2>
+  <div class="balance-box" id="balanceBox">
+    Not connected yet…
+  </div>
+  <button id="btnConnect" onclick="connect()">Connect Wallet (Rabby / MetaMask / OKX)</button>
+</div>
+
+<div class="card" id="step1">
+  <h2><span class="step-num">1</span>Approve rlSTONE → StakeRouter</h2>
+  <div class="row"><span class="label">Token:</span><span class="value">rlSTONE</span></div>
+  <div class="row"><span class="label">Spender:</span><span class="value">0x5AD8…C0AF (StakeRouter)</span></div>
+  <div class="row"><span class="label">Amount:</span><span class="value">unlimited (one-time)</span></div>
+  <button id="btnApprove" onclick="doApprove()" disabled>Approve (≈ $0.001 gas)</button>
+  <p class="muted">Lets the StakeRouter move your rlSTONE on your behalf. Only needed once per wallet.</p>
+</div>
+
+<div class="card" id="step2">
+  <h2><span class="step-num">2</span>Unstake rlSTONE → lSTONE</h2>
+  <div class="row"><span class="label">Contract:</span><span class="value">0x5AD8…C0AF</span></div>
+  <div class="row"><span class="label">Method:</span><span class="value">unstakeERC20(lSTONE, amount)</span></div>
+  <div class="row"><span class="label">Amount:</span><span class="value" id="unstakeAmtDisplay">— (auto-detected after connect)</span></div>
+  <button id="btnUnstake" onclick="doUnstake()" disabled>Unstake all rlSTONE</button>
+  <p class="muted">You'll receive the same amount of lSTONE in your wallet.</p>
+</div>
+
+<div class="card" id="step3">
+  <h2><span class="step-num">3</span>Withdraw lSTONE → STONE on LayerBank</h2>
+  <p style="margin: 10px 0; line-height: 1.6; font-size: 14px;">
+    Final step uses the LayerBank frontend (still alive):<br>
+    👉 <a href="https://manta.layerbank.finance/" target="_blank">https://manta.layerbank.finance/</a>
+  </p>
+  <p class="muted">
+    Connect your wallet → "Markets" tab → find STONE → "Withdraw" → enter amount → confirm.
+    From there you can swap STONE → ETH via izumi.finance or Quickswap V3, then bridge out.
+  </p>
+</div>
+
+<div class="card">
+  <h2>📋 Activity Log</h2>
+  <div class="log" id="log">Waiting for wallet connection…</div>
+</div>
+
+<footer>
+  Built by a fellow Renew Paradigm survivor. Use at your own risk — always verify on
+  <a href="https://pacific-explorer.manta.network/" target="_blank">Manta block explorer</a> before signing.
+  <br>
+  <small>Contracts: rlSTONE <code>0x2d391C26b02B97C7cDc3B08B50eDC69fAC92820b</code> ·
+  lSTONE <code>0x71384B2c17433Ba1D8F6Fe895E9B2E7953dCED68</code> ·
+  StakeRouter <code>0x5AD8f91CBb19eaF3dFe520b17F632c6F44B9C0AF</code></small>
+</footer>
+
+</div>
+
+<script>
+const MANTA_CHAIN_ID = "0xa9"; // 169
+const RLSTONE = "0x2d391C26b02B97C7cDc3B08B50eDC69fAC92820b";
+const LSTONE  = "0x71384B2c17433Ba1D8F6Fe895E9B2E7953dCED68";
+const STAKE_ROUTER = "0x5AD8f91CBb19eaF3dFe520b17F632c6F44B9C0AF";
+
+let provider = null;
+let currentAccount = null;
+let userRlstoneBalance = 0n;
+
+function log(msg, type='info') {
+  const el = document.getElementById('log');
+  const time = new Date().toLocaleTimeString();
+  const line = document.createElement('div');
+  line.className = 'log-' + type;
+  line.textContent = `[${time}] ${msg}`;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+
+async function getProvider() {
+  if (window.ethereum) {
+    if (window.ethereum.providers && window.ethereum.providers.length) {
+      const rabby = window.ethereum.providers.find(p => p.isRabby);
+      if (rabby) { log('Detected Rabby Wallet', 'info'); return rabby; }
+      const okx = window.ethereum.providers.find(p => p.isOkxWallet);
+      if (okx) { log('Detected OKX Wallet', 'info'); return okx; }
+      const mm = window.ethereum.providers.find(p => p.isMetaMask);
+      if (mm) { log('Detected MetaMask', 'info'); return mm; }
+      return window.ethereum.providers[0];
+    }
+    if (window.ethereum.isRabby) log('Detected Rabby Wallet', 'info');
+    else if (window.ethereum.isOkxWallet) log('Detected OKX Wallet', 'info');
+    else if (window.ethereum.isMetaMask) log('Detected MetaMask', 'info');
+    else log('Wallet detected (unknown brand)', 'warn');
+    return window.ethereum;
+  }
+  if (window.okxwallet) { log('Detected OKX Wallet', 'info'); return window.okxwallet; }
+  throw new Error("No wallet found. Please install Rabby / MetaMask / OKX.");
+}
+
+async function connect() {
+  try {
+    provider = await getProvider();
+    log("Requesting account access…", 'info');
+    const accs = await provider.request({ method: 'eth_requestAccounts' });
+    currentAccount = accs[0].toLowerCase();
+    log(`Connected: ${currentAccount}`, 'ok');
+
+    document.getElementById('btnConnect').textContent = '✅ Connected';
+    document.getElementById('btnConnect').disabled = true;
+
+    await checkNetwork();
+    await refreshBalances();
+
+    provider.on('chainChanged', () => location.reload());
+    provider.on('accountsChanged', () => location.reload());
+  } catch (e) {
+    log(`ERROR: ${e.message}`, 'err');
+  }
+}
+
+async function checkNetwork() {
+  const chainId = await provider.request({ method: 'eth_chainId' });
+  log(`Current chain: ${chainId}`, 'info');
+  if (chainId.toLowerCase() !== MANTA_CHAIN_ID) {
+    document.getElementById('netWarn').classList.add('show');
+    document.getElementById('btnApprove').disabled = true;
+    document.getElementById('btnUnstake').disabled = true;
+  } else {
+    document.getElementById('netWarn').classList.remove('show');
+  }
+}
+
+async function switchToManta() {
+  try {
+    await provider.request({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: MANTA_CHAIN_ID }],
+    });
+  } catch (e) {
+    if (e.code === 4902) {
+      await provider.request({
+        method: 'wallet_addEthereumChain',
+        params: [{
+          chainId: MANTA_CHAIN_ID,
+          chainName: 'Manta Pacific',
+          nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+          rpcUrls: ['https://pacific-rpc.manta.network/http'],
+          blockExplorerUrls: ['https://pacific-explorer.manta.network/'],
+        }],
+      });
+    } else {
+      log(`Switch network err: ${e.message}`, 'err');
+    }
+  }
+}
+
+async function ethCall(to, data) {
+  return await provider.request({
+    method: 'eth_call',
+    params: [{ to, data }, 'latest'],
+  });
+}
+
+async function getBalance(token, holder) {
+  const data = "0x70a08231" + "0".repeat(24) + holder.replace(/^0x/, '');
+  const res = await ethCall(token, data);
+  return BigInt(res || "0x0");
+}
+
+async function getAllowance(token, owner, spender) {
+  const data = "0xdd62ed3e" + "0".repeat(24) + owner.replace(/^0x/, '') + "0".repeat(24) + spender.replace(/^0x/, '');
+  const res = await ethCall(token, data);
+  return BigInt(res || "0x0");
+}
+
+function formatEther(wei) {
+  const s = wei.toString().padStart(19, '0');
+  const int = s.slice(0, -18) || '0';
+  const dec = s.slice(-18).replace(/0+$/, '');
+  return dec ? `${int}.${dec}` : int;
+}
+
+function toHex(bi) { return '0x' + bi.toString(16); }
+function pad64(hex) { return hex.replace(/^0x/, '').padStart(64, '0'); }
+
+async function refreshBalances() {
+  try {
+    const eth = await provider.request({ method: 'eth_getBalance', params: [currentAccount, 'latest'] });
+    const ethBI = BigInt(eth);
+    const rlb = await getBalance(RLSTONE, currentAccount);
+    const lsb = await getBalance(LSTONE, currentAccount);
+    const allow = await getAllowance(RLSTONE, currentAccount, STAKE_ROUTER);
+
+    userRlstoneBalance = rlb;
+
+    document.getElementById('balanceBox').innerHTML = `
+      <div class="row"><span class="label">Address:</span><span class="value">${currentAccount.slice(0,6)}…${currentAccount.slice(-4)}</span></div>
+      <div class="row"><span class="label">ETH (gas):</span><span class="value">${formatEther(ethBI)}</span></div>
+      <div class="row"><span class="label">rlSTONE:</span><span class="value">${formatEther(rlb)}</span></div>
+      <div class="row"><span class="label">lSTONE:</span><span class="value">${formatEther(lsb)}</span></div>
+      <div class="row"><span class="label">Allowance:</span><span class="value">${allow === 0n ? '❌ Not approved' : '✅ Approved'}</span></div>
+    `;
+
+    document.getElementById('unstakeAmtDisplay').textContent = formatEther(rlb) + ' rlSTONE';
+
+    log(`Balances loaded — rlSTONE: ${formatEther(rlb)} · lSTONE: ${formatEther(lsb)}`, 'info');
+
+    if (ethBI < 200000000000000n) {
+      log('⚠️ Low ETH gas (<0.0002). Bridge a tiny bit of ETH to Manta first.', 'warn');
+    }
+
+    if (rlb === 0n && lsb === 0n) {
+      log('No rlSTONE or lSTONE found in this wallet — nothing to rescue here.', 'warn');
+      return;
+    }
+
+    if (rlb > 0n) {
+      if (allow >= rlb) {
+        document.getElementById('step1').classList.add('step-done');
+        document.getElementById('btnApprove').textContent = '✅ Already approved';
+        document.getElementById('btnApprove').disabled = true;
+        document.getElementById('btnUnstake').disabled = false;
+      } else {
+        document.getElementById('btnApprove').disabled = false;
+        document.getElementById('btnUnstake').disabled = true;
+      }
+    } else if (lsb > 0n) {
+      // Already unstaked, just need to withdraw via LayerBank
+      document.getElementById('step1').classList.add('step-done');
+      document.getElementById('step2').classList.add('step-done');
+      document.getElementById('btnApprove').textContent = '✅ Done';
+      document.getElementById('btnUnstake').textContent = '✅ Already unstaked — go to step 3';
+      document.getElementById('btnApprove').disabled = true;
+      document.getElementById('btnUnstake').disabled = true;
+      log('You already hold lSTONE — proceed to step 3 (LayerBank).', 'ok');
+    }
+  } catch (e) {
+    log(`Error loading balance: ${e.message}`, 'err');
+  }
+}
+
+async function sendTx(to, data) {
+  const tx = await provider.request({
+    method: 'eth_sendTransaction',
+    params: [{ from: currentAccount, to, data, value: '0x0' }],
+  });
+  log(`TX submitted: ${tx}`, 'info');
+  log(`Waiting for confirmation…`, 'warn');
+  let receipt = null;
+  for (let i = 0; i < 60; i++) {
+    await new Promise(r => setTimeout(r, 3000));
+    receipt = await provider.request({
+      method: 'eth_getTransactionReceipt',
+      params: [tx],
+    });
+    if (receipt) break;
+  }
+  if (!receipt) throw new Error("Timeout waiting receipt");
+  if (receipt.status === '0x1') {
+    log(`✅ Confirmed in block ${parseInt(receipt.blockNumber, 16)}`, 'ok');
+    log(`Explorer: https://pacific-explorer.manta.network/tx/${tx}`, 'info');
+  } else {
+    throw new Error("TX reverted!");
+  }
+  return tx;
+}
+
+async function doApprove() {
+  try {
+    document.getElementById('btnApprove').disabled = true;
+    const data = "0x095ea7b3" + pad64(STAKE_ROUTER) + "f".repeat(64);
+    log("Sending approve(MAX)…", 'info');
+    await sendTx(RLSTONE, data);
+    log("Approve successful.", 'ok');
+    await refreshBalances();
+  } catch (e) {
+    log(`Approve err: ${e.message}`, 'err');
+    document.getElementById('btnApprove').disabled = false;
+  }
+}
+
+async function doUnstake() {
+  try {
+    if (userRlstoneBalance === 0n) {
+      log('No rlSTONE to unstake.', 'warn');
+      return;
+    }
+    document.getElementById('btnUnstake').disabled = true;
+    const amountHex = pad64(toHex(userRlstoneBalance));
+    const data = "0xc581af91" + pad64(LSTONE) + amountHex;
+    log("Sending unstakeERC20(lSTONE, " + formatEther(userRlstoneBalance) + ")…", 'info');
+    await sendTx(STAKE_ROUTER, data);
+    log("🎉 Unstake successful — lSTONE is now in your wallet.", 'ok');
+    log("➡️ Final step: open https://manta.layerbank.finance/ to withdraw STONE.", 'info');
+    await refreshBalances();
+  } catch (e) {
+    log(`Unstake err: ${e.message}`, 'err');
+    document.getElementById('btnUnstake').disabled = false;
+  }
+}
+</script>
+</body>
+</html>

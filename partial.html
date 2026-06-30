@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>rlSTONE Rescue — Rút theo %</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: #0d1117; color: #c9d1d9;
+  min-height: 100vh; padding: 24px;
+  display: flex; justify-content: center;
+}
+.container { max-width: 760px; width: 100%; }
+header { margin-bottom: 24px; }
+h1 { font-size: 26px; margin-bottom: 8px; color: #58a6ff; }
+.subtitle { color: #8b949e; margin-bottom: 8px; font-size: 14px; line-height: 1.5; }
+.tagline { color: #d29922; font-size: 13px; margin-top: 4px; }
+.card {
+  background: #161b22; border: 1px solid #30363d;
+  border-radius: 12px; padding: 20px; margin-bottom: 16px;
+}
+.card h2 { font-size: 17px; margin-bottom: 12px; color: #f0f6fc; display: flex; align-items: center; }
+.step-num {
+  display: inline-block; width: 26px; height: 26px;
+  background: #1f6feb; color: white; border-radius: 50%;
+  text-align: center; line-height: 26px; margin-right: 10px;
+  font-weight: bold; font-size: 13px; flex-shrink: 0;
+}
+.step-num.done { background: #238636; }
+button {
+  background: #238636; color: white; border: none;
+  padding: 11px 22px; border-radius: 8px;
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  margin-top: 10px; transition: background 0.15s;
+}
+button:hover:not(:disabled) { background: #2ea043; }
+button:disabled { background: #30363d; color: #8b949e; cursor: not-allowed; }
+button.connect { background: #1f6feb; }
+button.connect:hover { background: #388bfd; }
+.status {
+  margin-top: 12px; padding: 10px 12px;
+  border-radius: 6px; font-size: 13px;
+  font-family: ui-monospace, monospace;
+  word-break: break-all;
+}
+.status.info { background: #0d2d61; color: #a5d6ff; }
+.status.success { background: #033a16; color: #7ee787; }
+.status.error { background: #67060c; color: #ffa198; }
+.balance-row {
+  display: flex; justify-content: space-between; padding: 6px 0;
+  border-bottom: 1px solid #21262d;
+  font-size: 13px;
+}
+.balance-row:last-child { border-bottom: none; font-weight: 600; color: #58a6ff; }
+.percent-input {
+  width: 100%; padding: 10px;
+  background: #0d1117; color: #c9d1d9;
+  border: 1px solid #30363d; border-radius: 6px;
+  font-size: 16px; font-family: ui-monospace, monospace;
+  margin: 8px 0;
+}
+.percent-buttons {
+  display: flex; gap: 8px; margin: 8px 0;
+}
+.percent-buttons button {
+  flex: 1; background: #21262d; color: #c9d1d9;
+  padding: 8px; font-size: 13px;
+  margin-top: 0;
+}
+.percent-buttons button.active {
+  background: #1f6feb; color: white;
+}
+.amount-preview {
+  background: #0d2d61; padding: 12px;
+  border-radius: 6px; margin: 10px 0;
+  font-size: 14px;
+}
+.amount-preview .big {
+  font-size: 20px; color: #58a6ff;
+  font-weight: 600; font-family: ui-monospace, monospace;
+}
+.warning {
+  background: #4d3800; color: #ffd33d;
+  padding: 10px 12px; border-radius: 6px;
+  font-size: 12px; margin-top: 12px;
+}
+hr { border: none; border-top: 1px solid #21262d; margin: 12px 0; }
+a { color: #58a6ff; text-decoration: none; }
+a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+<h1>🔓 rlSTONE Rescue — Rút theo phần trăm</h1>
+<p class="subtitle">Phiên bản đặc biệt cho dịch vụ hỗ trợ 1-1.<br>
+Bạn chọn rút bao nhiêu % số dư hiện tại.</p>
+<p class="tagline">⚠️ KHÔNG xin private key. KHÔNG xin seed phrase. Ví của bạn ký tất cả.</p>
+</header>
+
+<div class="card">
+<h2><span class="step-num" id="num-0">0</span>Kết nối ví</h2>
+<button class="connect" id="btn-connect">Kết nối Rabby / MetaMask</button>
+<div id="status-connect"></div>
+</div>
+
+<div class="card" id="card-balance" style="display:none">
+<h2><span class="step-num" id="num-1">1</span>Số dư của bạn</h2>
+<div class="balance-row"><span>rlSTONE:</span><span id="bal-rlstone">—</span></div>
+<div class="balance-row"><span>lSTONE:</span><span id="bal-lstone">—</span></div>
+<div class="balance-row"><span>Tổng có thể rút (STONE):</span><span id="bal-total">—</span></div>
+</div>
+
+<div class="card" id="card-percent" style="display:none">
+<h2><span class="step-num" id="num-2">2</span>Chọn % muốn rút</h2>
+<div class="percent-buttons">
+<button data-pct="40">40%</button>
+<button data-pct="50">50%</button>
+<button data-pct="60" class="active">60%</button>
+<button data-pct="100">100%</button>
+</div>
+<input type="number" class="percent-input" id="pct-input" value="60" min="1" max="100" step="1">
+<div class="amount-preview">
+Sẽ rút: <span class="big" id="preview-amount">—</span> STONE<br>
+<small style="color:#8b949e">Số còn lại sau khi rút: <span id="preview-remaining">—</span> STONE</small>
+</div>
+</div>
+
+<div class="card" id="card-approve" style="display:none">
+<h2><span class="step-num" id="num-3">3</span>Cho phép (Approve) — chỉ 1 lần</h2>
+<p style="font-size:13px;color:#8b949e">Cho phép smart contract chuyển rlSTONE từ ví bạn. Bước này KHÔNG chuyển tiền.</p>
+<button id="btn-approve">Bước 1: Approve</button>
+<div id="status-approve"></div>
+</div>
+
+<div class="card" id="card-unstake" style="display:none">
+<h2><span class="step-num" id="num-4">4</span>Đổi rlSTONE → lSTONE</h2>
+<button id="btn-unstake">Bước 2: Unstake (theo % đã chọn)</button>
+<div id="status-unstake"></div>
+</div>
+
+<div class="card" id="card-redeem" style="display:none">
+<h2><span class="step-num" id="num-5">5</span>Đổi lSTONE → STONE (về ví bạn)</h2>
+<button id="btn-redeem">Bước 3: Redeem trên LayerBank</button>
+<div id="status-redeem"></div>
+</div>
+
+<div class="warning">
+💡 <strong>Lưu ý:</strong> Tool này dành cho dịch vụ hỗ trợ trả phí theo deal.<br>
+Bản miễn phí (rút 100% 1 lần) tại: <a href="index.html">index.html</a><br>
+Mã nguồn công khai trên GitHub — bạn có thể xem để chắc chắn không có gì gian dối.
+</div>
+
+</div>
+
+<script>
+const RLSTONE  = '0x2d391C26b02B97C7cDc3B08B50eDC69fAC92820b';
+const LSTONE   = '0x71384B2c17433Ba1D8F6Fe895E9B2E7953dCED68';
+const STAKE_ROUTER = '0x5AD8f91CBb19eaF3dFe520b17F632c6F44B9C0AF';
+const LAYERBANK_CORE = '0xB7A23Fc0b066051dE58B922dC1a08f33DF748bbf';
+const MANTA_CHAIN_ID = '0xa9'; // 169
+const MANTA_RPC = 'https://pacific-rpc.manta.network/http';
+
+let account = null;
+let rlBalance = 0n; // wei
+let lsBalance = 0n;
+let selectedPct = 60;
+
+const $ = id => document.getElementById(id);
+const setStatus = (id, msg, type='info') => {
+  $('status-'+id).className = 'status ' + type;
+  $('status-'+id).textContent = msg;
+};
+
+function fmt(wei, decimals=4) {
+  const s = wei.toString().padStart(19, '0');
+  const intPart = s.slice(0, -18) || '0';
+  const fracPart = s.slice(-18, -18+decimals);
+  return `${intPart}.${fracPart}`;
+}
+
+function pctOf(wei, pct) {
+  return (wei * BigInt(Math.round(pct * 100))) / 10000n;
+}
+
+async function rpc(method, params) {
+  return window.ethereum.request({ method, params });
+}
+
+async function ensureManta() {
+  const chainId = await rpc('eth_chainId', []);
+  if (chainId !== MANTA_CHAIN_ID) {
+    try {
+      await rpc('wallet_switchEthereumChain', [{ chainId: MANTA_CHAIN_ID }]);
+    } catch (e) {
+      if (e.code === 4902) {
+        await rpc('wallet_addEthereumChain', [{
+          chainId: MANTA_CHAIN_ID,
+          chainName: 'Manta Pacific',
+          rpcUrls: [MANTA_RPC],
+          nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+          blockExplorerUrls: ['https://pacific-explorer.manta.network']
+        }]);
+      } else throw e;
+    }
+  }
+}
+
+function encodeAddr(a) { return '000000000000000000000000' + a.slice(2).toLowerCase(); }
+function encodeUint(n) { return n.toString(16).padStart(64, '0'); }
+
+async function callBalance(token, owner) {
+  const data = '0x70a08231' + encodeAddr(owner);
+  const r = await rpc('eth_call', [{ to: token, data }, 'latest']);
+  return BigInt(r);
+}
+
+async function callAllowance(token, owner, spender) {
+  const data = '0xdd62ed3e' + encodeAddr(owner) + encodeAddr(spender);
+  const r = await rpc('eth_call', [{ to: token, data }, 'latest']);
+  return BigInt(r);
+}
+
+async function connect() {
+  try {
+    if (!window.ethereum) {
+      setStatus('connect', 'Chưa cài Rabby/MetaMask. Cài extension rồi reload.', 'error');
+      return;
+    }
+    const accounts = await rpc('eth_requestAccounts', []);
+    account = accounts[0];
+    await ensureManta();
+    setStatus('connect', 'Đã kết nối: ' + account, 'success');
+    $('num-0').classList.add('done');
+    await loadBalances();
+  } catch (e) {
+    setStatus('connect', 'Lỗi: ' + (e.message || e), 'error');
+  }
+}
+
+async function loadBalances() {
+  rlBalance = await callBalance(RLSTONE, account);
+  lsBalance = await callBalance(LSTONE, account);
+  $('bal-rlstone').textContent = fmt(rlBalance, 6);
+  $('bal-lstone').textContent = fmt(lsBalance, 6);
+  const total = rlBalance + lsBalance;
+  $('bal-total').textContent = fmt(total, 6);
+  $('card-balance').style.display = 'block';
+  $('num-1').classList.add('done');
+
+  if (rlBalance === 0n && lsBalance === 0n) {
+    setStatus('connect', 'Ví này không có rlSTONE hay lSTONE để rút.', 'error');
+    return;
+  }
+  $('card-percent').style.display = 'block';
+  updatePreview();
+}
+
+function updatePreview() {
+  const amount = pctOf(rlBalance, selectedPct);
+  const remaining = rlBalance - amount;
+  $('preview-amount').textContent = fmt(amount, 6);
+  $('preview-remaining').textContent = fmt(remaining, 6);
+  $('card-approve').style.display = 'block';
+  $('num-2').classList.add('done');
+}
+
+document.querySelectorAll('.percent-buttons button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.percent-buttons button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedPct = parseInt(btn.dataset.pct);
+    $('pct-input').value = selectedPct;
+    updatePreview();
+  });
+});
+
+$('pct-input').addEventListener('input', e => {
+  const v = parseFloat(e.target.value);
+  if (v > 0 && v <= 100) {
+    selectedPct = v;
+    document.querySelectorAll('.percent-buttons button').forEach(b => b.classList.remove('active'));
+    updatePreview();
+  }
+});
+
+async function approve() {
+  try {
+    setStatus('approve', 'Đang gửi giao dịch approve...', 'info');
+    const amount = pctOf(rlBalance, selectedPct);
+    // approve(spender, amount) selector 0x095ea7b3
+    const data = '0x095ea7b3' + encodeAddr(STAKE_ROUTER) + encodeUint(amount);
+    const txHash = await rpc('eth_sendTransaction', [{
+      from: account, to: RLSTONE, data
+    }]);
+    setStatus('approve', 'Đang chờ xác nhận: ' + txHash, 'info');
+    await waitTx(txHash);
+    setStatus('approve', '✓ Đã approve. Tx: ' + txHash, 'success');
+    $('num-3').classList.add('done');
+    $('card-unstake').style.display = 'block';
+  } catch (e) {
+    setStatus('approve', 'Lỗi: ' + (e.message || e), 'error');
+  }
+}
+
+async function unstake() {
+  try {
+    setStatus('unstake', 'Đang gửi giao dịch unstake...', 'info');
+    const amount = pctOf(rlBalance, selectedPct);
+    // unstakeERC20(address token, uint256 amount) selector 0xc581af91
+    const data = '0xc581af91' + encodeAddr(LSTONE) + encodeUint(amount);
+    const txHash = await rpc('eth_sendTransaction', [{
+      from: account, to: STAKE_ROUTER, data
+    }]);
+    setStatus('unstake', 'Đang chờ xác nhận: ' + txHash, 'info');
+    await waitTx(txHash);
+    // Refresh balances
+    lsBalance = await callBalance(LSTONE, account);
+    rlBalance = await callBalance(RLSTONE, account);
+    $('bal-rlstone').textContent = fmt(rlBalance, 6);
+    $('bal-lstone').textContent = fmt(lsBalance, 6);
+    setStatus('unstake', '✓ Đã unstake. lSTONE đã về ví bạn. Tx: ' + txHash, 'success');
+    $('num-4').classList.add('done');
+    $('card-redeem').style.display = 'block';
+  } catch (e) {
+    setStatus('unstake', 'Lỗi: ' + (e.message || e), 'error');
+  }
+}
+
+async function redeem() {
+  try {
+    setStatus('redeem', 'Đang gửi giao dịch redeem...', 'info');
+    // Redeem TOÀN BỘ lSTONE đang có (vì sau unstake đã đúng % rồi)
+    const amount = lsBalance;
+    if (amount === 0n) {
+      setStatus('redeem', 'Không có lSTONE để đổi.', 'error');
+      return;
+    }
+    // redeemToken(address lToken, uint256 lAmount) selector 0xeabe7d91
+    const data = '0xeabe7d91' + encodeAddr(LSTONE) + encodeUint(amount);
+    const txHash = await rpc('eth_sendTransaction', [{
+      from: account, to: LAYERBANK_CORE, data
+    }]);
+    setStatus('redeem', 'Đang chờ xác nhận: ' + txHash, 'info');
+    await waitTx(txHash);
+    setStatus('redeem', '✅ THÀNH CÔNG! STONE đã về ví bạn. Tx: ' + txHash, 'success');
+    $('num-5').classList.add('done');
+  } catch (e) {
+    setStatus('redeem', 'Lỗi: ' + (e.message || e), 'error');
+  }
+}
+
+async function waitTx(hash, maxTries=60) {
+  for (let i=0; i<maxTries; i++) {
+    await new Promise(r => setTimeout(r, 2000));
+    const receipt = await rpc('eth_getTransactionReceipt', [hash]);
+    if (receipt) {
+      if (receipt.status === '0x1') return receipt;
+      throw new Error('Tx failed: ' + hash);
+    }
+  }
+  throw new Error('Timeout chờ confirm');
+}
+
+$('btn-connect').addEventListener('click', connect);
+$('btn-approve').addEventListener('click', approve);
+$('btn-unstake').addEventListener('click', unstake);
+$('btn-redeem').addEventListener('click', redeem);
+</script>
+</body>
+</html>
